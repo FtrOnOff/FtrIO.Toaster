@@ -33,6 +33,15 @@
   }
   header .logo { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
   header .logo span { color: var(--accent); }
+  header .app-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--accent);
+    padding: 3px 10px;
+    border-radius: 99px;
+    letter-spacing: 0.3px;
+  }
   header .path-badge {
     margin-left: auto;
     font-size: 0.75rem;
@@ -263,6 +272,7 @@
 
 <header>
   <div class="logo">Ftr<span>IO</span> Toaster</div>
+  <span class="app-name" id="appName" style="display:none"></span>
   <span class="health-dot" id="healthDot"></span>
   <code class="path-badge" id="pathBadge">loading…</code>
 </header>
@@ -323,6 +333,8 @@ async function load() {
     ]);
     toggles = t;
     document.getElementById('pathBadge').textContent = h.path;
+    const appNameEl = document.getElementById('appName');
+    if (h.app_name) { appNameEl.textContent = h.app_name; appNameEl.style.display = 'inline'; }
     const dot = document.getElementById('healthDot');
     dot.className = 'health-dot ' + (h.exists ? 'ok' : 'err');
     dot.title = h.exists ? 'File found' : 'File not found — will be created on first save';

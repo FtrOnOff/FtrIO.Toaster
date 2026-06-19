@@ -39,9 +39,12 @@ volumes:
   - "/path/to/your/ftrio/app:/data"   # ← replace this
 ```
 
-The `APPSETTINGS_PATH` env var controls the exact filename inside that directory
-and defaults to `/data/appsettings.json` — you only need to change it if your
-file is named differently.
+Two env vars control behaviour:
+
+| Variable | Default | Description |
+|---|---|---|
+| `APPSETTINGS_PATH` | `/data/appsettings.json` | Full path to the config file inside the container |
+| `APP_NAME` | *(empty)* | Display name shown in the UI header — useful when running multiple Toaster instances for different products |
 
 If the app runs on a different machine, mount the directory over a network share
 first, then point the volume at the mount point. The file will be created

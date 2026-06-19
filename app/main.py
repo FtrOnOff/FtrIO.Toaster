@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 APPSETTINGS_PATH = Path(os.environ.get("APPSETTINGS_PATH", "/data/appsettings.json"))
+APP_NAME = os.environ.get("APP_NAME", "")
 _lock = threading.Lock()
 
 app = FastAPI(title="FtrIO Toaster")
@@ -76,6 +77,7 @@ def health():
     return {
         "path": str(APPSETTINGS_PATH),
         "exists": APPSETTINGS_PATH.exists(),
+        "app_name": APP_NAME,
     }
 
 

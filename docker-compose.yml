@@ -7,6 +7,7 @@ services:
       # Path inside the container where appsettings.json lives.
       # Change the volume mount below to point at the real file on your host.
       APPSETTINGS_PATH: /data/appsettings.json
+      APP_NAME: "PlaygroundConsole"  # e.g. "My API" — displayed in the UI header
     volumes:
       - "/path/to/your/app:/data"
     restart: unless-stopped
