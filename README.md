@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="app/static/ftrio-banner.png" alt="FtrIO Toaster" width="600"/>
+  <img src="app/static/FtrIOToaster.png" alt="FtrIO Toaster" width="600"/>
 </p>
 
 # FtrIO Toaster
