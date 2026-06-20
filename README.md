@@ -29,6 +29,7 @@ It's also a nod to the Dungeon Master who runs our D&D sessions. Every good camp
 - Add and delete toggles
 - Implements FtrIO's buffer logic — changes are staged in memory and flushed atomically to `appsettings.json` on the `FlushInterval` defined in your config, exactly as a native FtrIO provider would
 - Multi-environment support — manage any number of environments from a single UI instance
+- **Audit log** — every change is recorded with timestamp, environment, toggle key, old value, new value, and the acting user; viewable in-app via the Audit Log drawer
 
 ## Getting Started
 
@@ -50,6 +51,7 @@ Two env vars control general behaviour:
 | `APP_NAME` | *(empty)* | Display name shown in the UI header |
 | `AUTH_USERNAME` | *(empty)* | Basic auth username — set alongside `AUTH_PASSWORD` to enable |
 | `AUTH_PASSWORD` | *(empty)* | Basic auth password — set alongside `AUTH_USERNAME` to enable |
+| `CHANGES_LOG_PATH` | `/log/changes.log` | Path inside the container where the audit log is written |
 
 Auth is disabled when either variable is unset, which is fine for local dev. For any shared or production-accessible deployment, always set both. Credentials are compared in constant time to prevent timing attacks.
 
@@ -128,6 +130,38 @@ OAUTH2_PROXY_EMAIL_DOMAINS: yourcompany.com
 4. Access Toaster via `http://localhost:4180` — the proxy will redirect unauthenticated users to your provider's sign-in page.
 
 To restrict by individual email addresses instead of a domain, replace `OAUTH2_PROXY_EMAIL_DOMAINS` with `OAUTH2_PROXY_AUTHENTICATED_EMAILS_FILE` pointing to a mounted file containing one address per line.
+
+## Audit Log
+
+Every toggle change is recorded to an append-only JSONL file (`changes.log`). Each line contains:
+
+```json
+{"timestamp": "2026-06-20T14:32:01Z", "environment": "Production", "key": "PaymentV2", "old": "blue", "new": "green", "user": "alice"}
+```
+
+The **Audit Log** button in the toolbar opens an in-app drawer showing all recorded changes, newest first.
+
+### Who is logged as the user?
+
+| Setup | Logged as |
+|---|---|
+| Basic Auth enabled | The authenticated username |
+| OAuth2 Proxy sidecar | Value of `X-Forwarded-User` or `X-Auth-Request-User` header |
+| No auth configured | `anonymous` |
+
+### Persisting the log
+
+By default the log is written to `/log/changes.log` inside the container and is lost on restart. To persist it, mount a host directory:
+
+```yaml
+environment:
+  CHANGES_LOG_PATH: /log/changes.log
+
+volumes:
+  - type: bind
+    source: /path/to/your/log/dir
+    target: /log
+```
 
 ## appsettings.json Format
 
