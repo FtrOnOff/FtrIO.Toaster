@@ -303,6 +303,65 @@
   }
   .toast.err { border-color: var(--red); color: var(--red); }
   @keyframes slideIn { from { transform: translateY(16px); opacity: 0; } }
+
+  /* Log drawer */
+  .log-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    display: none;
+  }
+  .log-backdrop.open { display: block; }
+  .log-drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(720px, 96vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 301;
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+  }
+  .log-backdrop.open .log-drawer { transform: translateX(0); }
+  .log-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .log-header h2 { font-size: 1rem; font-weight: 600; }
+  .log-header .log-meta { font-size: 0.78rem; color: var(--muted); }
+  .log-body { overflow-y: auto; flex: 1; padding: 0; }
+  .log-empty { padding: 48px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .log-table th {
+    position: sticky; top: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  .log-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    vertical-align: top;
+  }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: var(--surface2); }
+  .log-key { font-weight: 600; color: var(--text); }
+  .log-val { font-family: monospace; font-size: 0.8rem; }
+  .log-val-old { color: var(--red); }
+  .log-val-new { color: var(--green); }
+  .log-val-null { color: var(--muted); font-style: italic; }
+  .log-ts { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+  .log-user { color: var(--accent); }
+  .log-env { font-size: 0.75rem; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -323,12 +382,32 @@
       <select class="env-select" id="envSelect" onchange="onEnvChange()">
         <option value="Base">Base</option>
       </select>
+      <button class="btn-ghost" onclick="openLog()">Audit Log</button>
       <button class="btn-primary" onclick="openAddModal()">+ Add Toggle</button>
     </div>
   </div>
   <div id="warningBanner" style="display:none; margin-bottom:16px"></div>
   <div class="toggle-list" id="toggleList"></div>
 </main>
+
+<!-- Log Drawer -->
+<div class="log-backdrop" id="logBackdrop" onclick="if(event.target===this)closeLog()">
+  <div class="log-drawer">
+    <div class="log-header">
+      <div>
+        <h2>Audit Log</h2>
+        <div class="log-meta" id="logMeta"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost" onclick="loadLog()" style="padding:5px 12px;font-size:0.8rem">Refresh</button>
+        <button class="btn-ghost" onclick="closeLog()" style="padding:5px 12px;font-size:0.8rem">✕ Close</button>
+      </div>
+    </div>
+    <div class="log-body" id="logBody">
+      <div class="log-empty">Loading…</div>
+    </div>
+  </div>
+</div>
 
 <!-- Add Modal -->
 <div class="modal-backdrop" id="addModal" style="display:none" onclick="if(event.target===this)closeAddModal()">
@@ -589,7 +668,68 @@ function toast(msg, err = false) {
   toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2500);
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAddModal(); });
+// ── Audit Log ────────────────────────────────────────────────────────────────
+
+function openLog() {
+  document.getElementById('logBackdrop').classList.add('open');
+  loadLog();
+}
+function closeLog() {
+  document.getElementById('logBackdrop').classList.remove('open');
+}
+
+function fmtVal(v) {
+  if (v === null || v === undefined) return '<span class="log-val log-val-null">—</span>';
+  const s = String(v);
+  return `<span class="log-val">${esc(s)}</span>`;
+}
+
+function fmtTs(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium' });
+  } catch { return iso; }
+}
+
+async function loadLog() {
+  const body = document.getElementById('logBody');
+  try {
+    const entries = await fetch('/api/log?limit=200').then(r => r.json());
+    document.getElementById('logMeta').textContent =
+      entries.length === 0 ? 'No entries yet' :
+      `${entries.length} most recent change${entries.length !== 1 ? 's' : ''}`;
+
+    if (entries.length === 0) {
+      body.innerHTML = '<div class="log-empty">No changes have been recorded yet.</div>';
+      return;
+    }
+
+    body.innerHTML = `<table class="log-table">
+      <thead><tr>
+        <th>When</th>
+        <th>Environment</th>
+        <th>Toggle</th>
+        <th>From</th>
+        <th>To</th>
+        <th>User</th>
+      </tr></thead>
+      <tbody>${entries.map(e => `<tr>
+        <td class="log-ts">${fmtTs(e.timestamp)}</td>
+        <td class="log-env">${esc(e.environment)}</td>
+        <td class="log-key">${esc(e.key)}</td>
+        <td>${fmtVal(e.old)}</td>
+        <td>${fmtVal(e.new)}</td>
+        <td class="log-user">${esc(e.user)}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch(err) {
+    body.innerHTML = '<div class="log-empty">Failed to load log.</div>';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeAddModal(); closeLog(); }
+});
 
 load();
 setInterval(loadToggles, 60_000);

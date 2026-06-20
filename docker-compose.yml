@@ -31,6 +31,10 @@ services:
       # APPSETTINGS_LABEL_STAGING: C:/path/to/your/staging/app/appsettings.json
       # APPSETTINGS_LABEL_PRODUCTION: //prod-server/share/appsettings.json
 
+      # Path inside the container where the audit log is written.
+      # Mount a host directory here to persist the log across container restarts.
+      CHANGES_LOG_PATH: /log/changes.log
+
     volumes:
       # Each volume maps a host directory containing an appsettings.json to a
       # path inside the container. Use forward slashes even on Windows.
@@ -43,6 +47,11 @@ services:
       # - type: bind
       #   source: /path/to/your/production/app
       #   target: /env/production
+
+      # Persist the audit log to a host directory so it survives container restarts.
+      # - type: bind
+      #   source: /path/to/your/log/dir
+      #   target: /log
 
     restart: unless-stopped
 
