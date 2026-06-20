@@ -33,13 +33,39 @@ It's also a nod to the Dungeon Master who runs our D&D sessions. Every good camp
 
 ## Getting Started
 
+Create a `compose.yml` and paste in the snippet below — no cloning required:
+
+```yaml
+services:
+  toaster:
+    image: thescottbot/ftrio:latest
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "My Application"
+      APPSETTINGS_PATH: /data/appsettings.json
+      # AUTH_USERNAME: admin
+      # AUTH_PASSWORD: secret
+      # CHANGES_LOG_PATH: /log/changes.log
+      # APPSETTINGS_PATH_STAGING: /env/staging/appsettings.json
+    volumes:
+      - type: bind
+        source: /path/to/your/appsettings.json
+        target: /data/appsettings.json
+      - toaster-logs:/log
+    restart: unless-stopped
+
+volumes:
+  toaster-logs:
+```
+
 ```bash
-git clone https://github.com/FtrOnOff/FtrIO.Toaster
-cd FtrIO.Toaster
 docker compose up -d
 ```
 
 Open `http://localhost:8000`.
+
+> **Want to build from source or contribute?** Clone the repo and run `docker compose up -d --build` instead.
 
 ## Configuration
 

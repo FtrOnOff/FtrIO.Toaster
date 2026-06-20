@@ -4,6 +4,8 @@ A lightweight web UI for managing [FtrIO](https://github.com/FtrOnOff/FtrIO) fea
 
 ## Quick Start
 
+Create a `compose.yml` and paste in this snippet — no cloning required:
+
 ```yaml
 services:
   toaster:
@@ -12,12 +14,24 @@ services:
       - "8000:8000"
     environment:
       APP_NAME: "My Application"
-      APPSETTINGS_PATH: /env/app/appsettings.json
+      APPSETTINGS_PATH: /data/appsettings.json
+      # AUTH_USERNAME: admin
+      # AUTH_PASSWORD: secret
+      # CHANGES_LOG_PATH: /log/changes.log
+      # APPSETTINGS_PATH_STAGING: /env/staging/appsettings.json
     volumes:
       - type: bind
-        source: /path/to/your/app
-        target: /env/app
+        source: /path/to/your/appsettings.json
+        target: /data/appsettings.json
+      - toaster-logs:/log
     restart: unless-stopped
+
+volumes:
+  toaster-logs:
+```
+
+```bash
+docker compose up -d
 ```
 
 Open `http://localhost:8000`.
